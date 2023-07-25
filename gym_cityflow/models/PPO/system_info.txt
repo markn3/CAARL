@@ -1,0 +1,7 @@
+- OS: Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-glibc2.31 # 1 SMP Fri Apr 2 22:23:49 UTC 2021
+- Python: 3.9.13
+- Stable-Baselines3: 1.7.0
+- PyTorch: 1.13.1+cu117
+- GPU Enabled: True
+- Numpy: 1.21.5
+- Gym: 0.21.0
