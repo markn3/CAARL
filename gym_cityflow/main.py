@@ -1,8 +1,12 @@
 # Import necessary modules
 import os
 import gym
+import copy
 from stable_baselines3 import PPO
-from adv import AdversarialEnv  # Import the AdversarialEnv class from adv.py
+from stable_baselines3.common.policies import ActorCriticCnnPolicy
+from adv import AdversaryEnv  # Import the AdversarialEnv class from adv.py
+from agent import AgentEnv
+import numpy as np
 
 if __name__ == "__main__":
 
@@ -10,49 +14,60 @@ if __name__ == "__main__":
     models_dir = "./models"
     logdir = os.path.join("logs")
 
-    # Create directories if they don't exist
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
 
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
-    # Define the total number of episodes to train for
-    total_episodes = 1000
-
-    # Create the original Gym environment
+    # Create the environments for the agent and the adversary
     env = gym.make('gym_cityflow:CityFlow-1x1-LowTraffic-v0')
+    adversary_env = gym.make('gym_cityflow:CityFlow-1x1-LowTraffic-v0')
 
-    # Create the adversary using the same PPO algorithm as the main model
-    adversary = PPO("MlpPolicy", env, verbose=1, tensorboard_log=logdir)
+    # Create the adversary
+    adversary = PPO("MlpPolicy", adversary_env, verbose=1, tensorboard_log=logdir)
 
-    # Wrap the original environment with the AdversarialEnv,
-    # which will use the adversary to perturb the agent's observations
-    env = AdversarialEnv(env, adversary)
+    # Wrap the adversary's environment with the AdversaryEnv
+    wrapped_adversary_env = AdversaryEnv(adversary_env, adversary)
 
-    # Create the main model (the traffic signal controller) using the adversarial environment
+    # Recreate the adversary with the wrapped environment
+    adversary = PPO("MlpPolicy", wrapped_adversary_env, verbose=1, tensorboard_log=logdir)
+
+    # Recreate the AdversaryEnv with the final adversary
+    adversary_env = AdversaryEnv(adversary_env, adversary)
+
+    # Wrap the agent's environment with the AgentEnv
+    env = AgentEnv(env, adversary)  # Use a copy of the adversary
+
+    # Create the main model (the traffic signal controller)
     model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=logdir)
 
-    # Define the number of steps to log results after
-    log_interval = 5
-    # Define the total number of steps to train for
-    total_steps = total_episodes * env.steps_per_episode
+    total_episodes = 10
 
-    # Main training loop
-    for i in range(total_episodes):
-        # Reset the environment and get the initial observation
+    for episode in range(total_episodes):
         obs = env.reset()
-
+        obs = obs.reshape(1, -1)
+        adversary_obs = adversary_env.reset()
+        adversary_obs = adversary_obs.reshape(1, -1)
         done = False
         while not done:
-            # The model makes a decision based on the perturbed observation
+
             action, _states = model.predict(obs)
+            adversary_action, _ = adversary.predict(adversary_obs)
 
-            # Take a step in the environment and get the new perturbed observation and reward
-            obs, reward, done, info, adversary_reward = env.step(action)
+            obs, reward, done, info = env.step(action)
 
-            # Both the model and the adversary learn from their experiences
-            model.learn(total_timesteps=1)
-            adversary.learn(total_timesteps=1)
+            model.last_reward = reward  # Store the last reward for the adversary
+
+            adversary_obs, _, _, _ = adversary_env.step(action)
+
+        if episode % 2 == 0:
+            print("AGENT LEARNING ", episode)
+            model.learn(total_timesteps=env.steps_per_episode)
+            adversary_env = AdversaryEnv(adversary_env, model)  # Use a copy of the model
+        else:
+            print("ADVERSARY LEARNING", episode)
+            adversary.learn(total_timesteps=env.steps_per_episode)
+            env = AgentEnv(env, adversary)  # Use a copy of the adversary
 
     print("Done")

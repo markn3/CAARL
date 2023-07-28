@@ -64,7 +64,7 @@ class CityFlow_1x1_LowTraffic(gym.Env):
 
         self.sec_per_step = 1.0
 
-        self.steps_per_episode = 2000
+        self.steps_per_episode = 400
         self.current_step = 0
         self.sequence_index = 0
         
@@ -259,7 +259,7 @@ class CityFlow_1x1_LowTraffic(gym.Env):
             reward = 0.0
 
         if self.current_step + 1 == self.steps_per_episode:
-            print("\nFinal state: ", state, "\n")
+            # print("\nFinal state: ", state, "\n")
             lane_waiting_vehicles_dict = self.cityflow.get_lane_waiting_vehicle_count()
             print("\nFinal Queue length: ", lane_waiting_vehicles_dict)
             self.is_done = True

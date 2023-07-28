@@ -1,45 +1,40 @@
 import gym
+import numpy as np
+from gym import spaces
+import numpy as np
 
-class AdversarialEnv(gym.Wrapper):
+class AdversaryEnv(gym.Wrapper):
     def __init__(self, env, adversary):
         super().__init__(env)
+        self.action_space = spaces.MultiDiscrete([3]*33)
         self.adversary = adversary
-
-        self.mode = "all_all"
-
-        if self.mode == "all_all":
-            self.observation_space = spaces.MultiDiscrete([100]*32 + [5])
-        else:
-            self.observation_space = spaces.MultiDiscrete([100]*8 + [5])
+        
+    def reset(self):
+        true_obs = self.env.reset()
+        perturbation, _ = self.adversary.predict(true_obs)
+        initial_perturbed_obs = self.perturb_observation(true_obs, perturbation)
+        return initial_perturbed_obs
 
     def step(self, action):
-        # Get the true observation, reward, and done status from the environment
-        true_obs, reward, done, info = self.env.step(action)
+        action = action[0]
+        obs, reward, done, info = self.env.step(action)
+        self.adversary_action = self.adversary.predict(obs)[0]
+        perturbed_obs = self.perturb_observation(obs, self.adversary_action)
+        perturbed_obs = perturbed_obs.reshape(1, -1)
 
-        # Let the adversary choose a perturbation
-        perturbation, _ = self.adversary.predict(true_obs)
-
-        # Apply the perturbation to the observation
-        obs = self.perturb_observation(true_obs, perturbation)
-
-        # The adversary's reward is the negative of the primary agent's reward
-        adversary_reward = -reward
-
-        return obs, reward, done, info, adversary_reward
+        return perturbed_obs, -reward, done, info
 
     def perturb_observation(self, true_obs, perturbation):
-        # Modify this method as needed to apply the perturbation
-        # For example, you might simply add the perturbation to the true observation
-        return true_obs + perturbation
+        # Subtract 2 from the action to get values of -2, -1, 0, 1, 2
+        scale = 1
+        perturbed_obs = true_obs.copy()  # Create a copy of the true observation
+        perturbed_obs[:-1] += perturbation[:-1] - scale  # Apply the perturbation to all elements except the last one
 
-    def reset(self):
-        # Reset the underlying Gym environment
-        true_obs = self.env.reset()
+        # Ensure that all values are >= 0
+        perturbed_obs = np.maximum(perturbed_obs, 0)
+        # print(f"perturbed_obs: {perturbed_obs}  | true_obs: {true_obs}")
 
-        # Let the adversary choose an initial perturbation
-        perturbation, _ = self.adversary.predict(true_obs)
+        return perturbed_obs
 
-        # Apply the perturbation to the initial observation
-        obs = self.perturb_observation(true_obs, perturbation)
-
-        return obs
+    def get_adversary_action(self):
+        return self.adversary_action
