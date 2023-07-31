@@ -25,6 +25,17 @@ class AdversaryEnv(gym.Wrapper):
         return perturbed_obs, -reward, done, info
 
     def perturb_observation(self, true_obs, perturbation):
+        # p and epsilon
+        p = 0
+        epsilon = 0
+
+        # Compute the lp norm of the perturbation
+        lp_norm = np.linalg.norm(perturbation[:-1], ord=p)
+
+        # If the lp norm is larger than the budget epsilon, scale down the perturbation
+        if lp_norm > epsilon:
+            perturbation[:-1] = perturbation[:-1] / lp_norm * epsilon
+
         # Subtract 2 from the action to get values of -2, -1, 0, 1, 2
         scale = 1
         perturbed_obs = true_obs.copy()  # Create a copy of the true observation
@@ -32,7 +43,6 @@ class AdversaryEnv(gym.Wrapper):
 
         # Ensure that all values are >= 0
         perturbed_obs = np.maximum(perturbed_obs, 0)
-        # print(f"perturbed_obs: {perturbed_obs}  | true_obs: {true_obs}")
 
         return perturbed_obs
 
