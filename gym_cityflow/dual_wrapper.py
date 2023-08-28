@@ -8,29 +8,42 @@ class DualEnvWrapper(gym.Wrapper):
         if action_space is not None:
             self.action_space = action_space
         self.perturbed_state = None  # To store the state after adversary's perturbation
+        self.is_adversary = False
+        self.agent = None
+
+    def set_mode(self, is_adversary, agent=None):
+        self.is_adversary = is_adversary
+        self.agent = agent
 
     def reset(self):
         obs = self.env.reset()
         self.perturbed_state = obs  # Initialize with the real state
         return obs  # Both agent and adversary would initially see the same observation
 
-    def step(self, action, is_adversary=False):
-        if is_adversary:
+    def step(self, action):
+        if self.is_adversary:
             # Apply the perturbation to the real state to get the perturbed state
             self.perturbed_state = self.apply_perturbation(action, self.env.get_state())
-            
-            # Calculate the adversary's reward (negative of agent's reward)
-            adversary_reward = self.calculate_adversary_reward(self.perturbed_state)
 
-            
-            # Don't actually step the environment, just return the perturbed state and reward
+            # print("Checking state: ", self.env.get_state())
+            # print("Checking perturbated state: ", self.perturbed_state)
+
+            # get the action from the agent model. Passing the perturbed state through the predict function.
+            agent_action = self.agent.predict(self.perturbed_state)
+
+            # print("Agent action: ", agent_action[0])
+
+            # using the agent's action, we step in the environment to get the needed info
+            self.perturbed_state, reward, done, info = self.env.step(agent_action[0])
+        
             print(self.env.current_step)
             if self.env.current_step+1 == self.env.steps_per_episode:
                 done = True
             else:
                 done = False
-            return self.perturbed_state, adversary_reward, done, {}
-        
+
+            # Return the negative reward
+            return self.perturbed_state, -reward, done, {}
         else:
             # Step the real environment with the agent's action
             next_state, reward, done, info = self.env.step(action)
@@ -58,9 +71,4 @@ class DualEnvWrapper(gym.Wrapper):
         return perturbed_observation
 
 
-    def calculate_adversary_reward(self, perturbed_state):
-        # Implement logic to calculate the adversary's reward
-        # *The negative of the agent's reward*
-        agent_reward = self.env.get_reward()
-        print("Agent reward: ", agent_reward)
-        return -agent_reward
+

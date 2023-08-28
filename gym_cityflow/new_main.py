@@ -32,20 +32,20 @@ for episode in range(total_episodes):
 
     if is_adversary_training:
         print("Training the adversary in episode:", episode)
+        adversary_env.set_mode(True, agent)
     else:
         print("Training the agent in episode:", episode)
+        agent_env.set_mode(False)
     
     # Reset the environments and get initial observations
     agent_obs = agent_env.reset()
     adversary_obs = adversary_env.reset()
 
-    
     while not done:
         if is_adversary_training:
             # Train the adversary
-            print("YES")
             action, _ = adversary.predict(adversary_obs)
-            next_obs, reward, done, _ = adversary_env.step(action, is_adversary=True)
+            next_obs, reward, done, _ = adversary_env.step(action)
             
             # Update adversary observation
             adversary_obs = next_obs
@@ -56,7 +56,7 @@ for episode in range(total_episodes):
         else:
             # Train the agent
             action, _ = agent.predict(agent_obs)
-            next_obs, reward, done, _ = agent_env.step(action, is_adversary=False)
+            next_obs, reward, done, _ = agent_env.step(action)
             
             # Update agent observation
             agent_obs = next_obs
@@ -66,6 +66,10 @@ for episode in range(total_episodes):
             
     # Train the models based on the collected experience
     if is_adversary_training:
+        print("Adversary learning")
+        adversary_env.set_mode(True, agent)
         adversary.learn(total_timesteps=agent_env.steps_per_episode)
     else:
+        print("agent learning")
+        agent_env.set_mode(False)
         agent.learn(total_timesteps=agent_env.steps_per_episode)
