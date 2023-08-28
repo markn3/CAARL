@@ -7,7 +7,7 @@ from stable_baselines3.common.policies import ActorCriticCnnPolicy
 from adv import AdversaryEnv  # Import the AdversarialEnv class from adv.py
 from dual_wrapper import DualEnvWrapper
 from gym import spaces
-
+from helper import load_parameters
 
 # Initialize base environment and wrap it
 base_env  = gym.make('gym_cityflow:CityFlow-1x1-LowTraffic-v0')
@@ -15,6 +15,9 @@ base_env  = gym.make('gym_cityflow:CityFlow-1x1-LowTraffic-v0')
 # Create wrappers for the agent and the adversary
 agent_env = DualEnvWrapper(base_env, action_space=base_env.action_space)  # or any other custom action space
 adversary_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([3]*33))
+
+# Load the parameters
+params = load_parameters('parameters.json')
 
 # Initialize the agent and the adversary
 agent = PPO("MlpPolicy", agent_env, verbose=1)
