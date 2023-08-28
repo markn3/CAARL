@@ -69,10 +69,8 @@ for episode in range(total_episodes):
             
     # Train the models based on the collected experience
     if is_adversary_training:
-        print("Adversary learning")
         adversary_env.set_mode(True, agent)
         adversary.learn(total_timesteps=agent_env.steps_per_episode)
     else:
-        print("agent learning")
         agent_env.set_mode(False)
         agent.learn(total_timesteps=agent_env.steps_per_episode)

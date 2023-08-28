@@ -31,8 +31,6 @@ class DualEnvWrapper(gym.Wrapper):
             # get the action from the agent model. Passing the perturbed state through the predict function.
             agent_action = self.agent.predict(self.perturbed_state)
 
-            # print("Agent action: ", agent_action[0])
-
             # using the agent's action, we step in the environment to get the needed info
             self.perturbed_state, reward, done, info = self.env.step(agent_action[0])
         
