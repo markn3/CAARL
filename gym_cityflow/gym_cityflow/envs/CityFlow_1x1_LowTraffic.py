@@ -248,8 +248,8 @@ class CityFlow_1x1_LowTraffic(gym.Env):
         # Transition to the next state
         self.cityflow.next_step()
 
-        state = self._get_state()
-        reward = self._get_reward()
+        state = self.get_state()
+        reward = self.get_reward()
         self.current_step += 1
 
         if self.is_done:
@@ -261,14 +261,13 @@ class CityFlow_1x1_LowTraffic(gym.Env):
         if self.current_step + 1 == self.steps_per_episode:
             # print("\nFinal state: ", state, "\n")
             lane_waiting_vehicles_dict = self.cityflow.get_lane_waiting_vehicle_count()
-            print("\nFinal Queue length: ", lane_waiting_vehicles_dict)
+            # print("\nFinal Queue length: ", lane_waiting_vehicles_dict)
             self.is_done = True
 
         return state, reward, self.is_done, {}
 
 
     def reset(self):
-        print("Reset called", self.current_step, "\n")
         # traceback.print_stack()
         self.vehicle_wait_times = {}
         self.cityflow.reset()
@@ -281,12 +280,12 @@ class CityFlow_1x1_LowTraffic(gym.Env):
 
         self.phase_duration = 30
 
-        return self._get_state()
+        return self.get_state()
 
     def render(self, mode='human'):
         print("Current time: " + self.cityflow.get_current_time())
 
-    def _get_state(self):
+    def get_state(self):
         lane_vehicles_dict = self.cityflow.get_lane_vehicle_count()
         lane_waiting_vehicles_dict = self.cityflow.get_lane_waiting_vehicle_count()
 
@@ -297,8 +296,6 @@ class CityFlow_1x1_LowTraffic(gym.Env):
             for i in range(len(self.all_lane_ids)):
                 state[i*2] = lane_vehicles_dict[self.all_lane_ids[i]]
                 state[i*2 + 1] = lane_waiting_vehicles_dict[self.all_lane_ids[i]]
-        
-                
 
         if self.mode=="start_waiting":
             state = np.zeros(len(self.start_lane_ids), dtype=np.float32)
@@ -309,7 +306,7 @@ class CityFlow_1x1_LowTraffic(gym.Env):
 
         return state
 
-    def _get_reward(self):
+    def get_reward(self):
         # Get the count of waiting vehicles
         lane_waiting_vehicles_dict = self.cityflow.get_lane_waiting_vehicle_count()
         lane_vehicles_dict = self.cityflow.get_lane_vehicle_count()
