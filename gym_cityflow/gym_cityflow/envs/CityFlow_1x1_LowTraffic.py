@@ -324,8 +324,6 @@ class CityFlow_1x1_LowTraffic(gym.Env):
         # # Compute reward
         # reward = -b1 * q + (b2 * n / T)
 
-
-
         # # Calculate average queue length (average of waiting vehicles)
         q_avg = sum(lane_waiting_vehicles_dict.values()) / len(lane_waiting_vehicles_dict)
         # Calculate average vehicle throughput (average of all vehicles)
@@ -347,10 +345,6 @@ class CityFlow_1x1_LowTraffic(gym.Env):
         
         # print("Reward: ", reward)
         return reward 
-
-
-
-
 
     def set_replay_path(self, path):
         self.cityflow.set_replay_file(path)
