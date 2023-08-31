@@ -1,34 +1,22 @@
-from stable_baselines3.common.policies import ActorCriticPolicy
-import torch.nn as nn
-from collections import deque
 import torch
+import torch.nn as nn
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
-N = 5
-
-class CustomLSTMPolicy(ActorCriticPolicy):
-    def __init__(self, observation_space, action_space, lr_schedule, **kwargs):
-        super(CustomLSTMPolicy, self).__init__(observation_space, action_space, lr_schedule, **kwargs)
+class CustomLSTMPolicy(BaseFeaturesExtractor):
+    def __init__(self, observation_space, features_dim=256):
+        # Assuming observation_space is flat: 32 elements up to 100 + 5 elements up to some small number
+        super(CustomLSTMPolicy, self).__init__(observation_space, features_dim)
         
-        # Define the LSTM layer
-        self.lstm = nn.LSTM(input_size=33, hidden_size=64)
-        self.features_dim = 64
+        input_dim = 33  # Based on the observation space
+        hidden_dim = 128  # tune this
+        num_layers = 1  # Number of LSTM layers, can also be tuned
 
-        # Define a buffer to store the last N observations
-        self.observation_buffer = deque(maxlen=N)  # N is the desired sequence length
-
-    def forward(self, obs, deterministic=False):
-        print("Observations: ", obs)
-        # Store the current observation in the buffer
-        self.observation_buffer.append(obs)
-
-        # Convert the buffer to a PyTorch tensor and adjust dimensions
-        lstm_input = torch.stack(list(self.observation_buffer)).unsqueeze(1)
+        # Define LSTM and other layers here
+        self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dim, num_layers=num_layers)
+        self.fc = nn.Linear(hidden_dim, features_dim)
         
-        # Pass the batched observations through the LSTM
-        lstm_out, _ = self.lstm(lstm_input)
-        
-        # Use the last output from the LSTM sequence for the rest of the network
-        lstm_out = lstm_out[-1]
-
-        return super(CustomLSTMPolicy, self).forward(lstm_out, deterministic)
-
+    def forward(self, x):
+        h_0 = torch.zeros(1, x.size(0), 128)  # initial hidden state
+        c_0 = torch.zeros(1, x.size(0), 128)  # initial cell state
+        x, _ = self.lstm(x, (h_0, c_0))
+        return self.fc(x)
