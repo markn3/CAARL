@@ -4,7 +4,6 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 class CustomLSTMPolicy(BaseFeaturesExtractor):
     def __init__(self, observation_space, features_dim=256):
-        # Assuming observation_space is flat: 32 elements up to 100 + 5 elements up to some small number
         super(CustomLSTMPolicy, self).__init__(observation_space, features_dim)
         
         input_dim = 33  # Based on the observation space

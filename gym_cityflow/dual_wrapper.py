@@ -1,7 +1,9 @@
+# Import required libraries
 import gym
 from gym import spaces
 import numpy as np
 
+# Define the DualEnvWrapper class to handle both agent and adversary
 class DualEnvWrapper(gym.Wrapper):
     def __init__(self, env, action_space=None):
         super(DualEnvWrapper, self).__init__(env)
@@ -11,10 +13,12 @@ class DualEnvWrapper(gym.Wrapper):
         self.is_adversary = False
         self.agent = None
 
+    # Set the mode to either agent or adversary
     def set_mode(self, is_adversary, agent=None):
         self.is_adversary = is_adversary
         self.agent = agent
 
+    # Reset the environment and initialize the perturbed state
     def reset(self):
         obs = self.env.reset()
         self.perturbed_state = obs  # Initialize with the real state
@@ -24,9 +28,6 @@ class DualEnvWrapper(gym.Wrapper):
         if self.is_adversary:
             # Apply the perturbation to the real state to get the perturbed state
             self.perturbed_state = self.apply_perturbation(action, self.env.get_state())
-
-            # print("Checking state: ", self.env.get_state())
-            # print("Checking perturbated state: ", self.perturbed_state)
 
             # get the action from the agent model. Passing the perturbed state through the predict function.
             agent_action = self.agent.predict(self.perturbed_state)
