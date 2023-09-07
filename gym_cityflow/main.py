@@ -8,7 +8,6 @@ from dual_wrapper import DualEnvWrapper
 from gym import spaces
 from helper import load_parameters
 
-
 if __name__ == "__main__":
     # Initialize base environment and wrap it
     base_env  = gym.make('gym_cityflow:CityFlow-1x1-LowTraffic-v0')
@@ -21,8 +20,8 @@ if __name__ == "__main__":
     params = load_parameters('parameters.json')
 
     # Initialize the agent and the adversary
-    agent = PPO("MlpPolicy", agent_env, verbose=1)
-    adversary = PPO("MlpPolicy", adversary_env, verbose=1)
+    agent = PPO(CustomLSTMPolicy, agent_env, verbose=1)
+    adversary = PPO(CustomLSTMPolicy, adversary_env, verbose=1)
 
     # Set the total number of episodes and the number of episodes per training round
     total_episodes = 100
@@ -30,6 +29,11 @@ if __name__ == "__main__":
 
     # Start the training loop over the total number of episodes
     for episode in range(total_episodes):
+
+        # Reset the LSTM's internal states for both agent and adversary
+        agent.policy.reset_states()
+        adversary.policy.reset_states()
+
         done = False
         
         # Determine the training entity (agent or adversary) based on the current episode
@@ -44,8 +48,8 @@ if __name__ == "__main__":
             agent_env.set_mode(False)
         
         # Reset the environments and get initial observations
-        agent_obs = agent_env.reset()
-        adversary_obs = adversary_env.reset()
+        agent_obs = agent_env.reset().reshape(1, 5, 33)
+        adversary_obs = adversary_env.reset().reshape(1, 5, 33)
 
         while not done:
 
@@ -64,8 +68,7 @@ if __name__ == "__main__":
             else:
                 # Train the agent
                 action, _ = agent.predict(agent_obs)
-                next_obs, reward, done, _ = agent_env.step(action)
-                
+                next_obs, reward, done, _ = agent_env.step(action[0])
                 # Update agent observation
                 agent_obs = next_obs
                 
