@@ -64,7 +64,7 @@ class CityFlow_1x1_LowTraffic(gym.Env):
 
         self.sec_per_step = 1.0
 
-        self.steps_per_episode = 400
+        self.steps_per_episode = 1000
         self.current_step = 0
         self.sequence_index = 0
         

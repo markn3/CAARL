@@ -40,12 +40,9 @@ class DualEnvWrapper(gym.Wrapper):
 
             # get the action from the agent model. Passing the sequence of past observations through the predict function.
             agent_action = self.agent.predict(self.past_observations.reshape(1,5,33))
-            print("AGENT ACITON: ", agent_action)
-            print("AGENT ACITON: ", agent_action[0][0])
             # using the agent's action, we step in the environment to get the needed info
             self.perturbed_state, reward, done, info = self.env.step(agent_action[0][0])
         
-            print(self.env.current_step)
             if self.env.current_step+1 == self.env.steps_per_episode:
                 done = True
             else:

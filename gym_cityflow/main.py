@@ -9,6 +9,21 @@ from gym import spaces
 from helper import load_parameters
 
 if __name__ == "__main__":
+
+    # Define directories for saving models and logs
+    models_dir = "./models"
+    logdir = os.path.join("logs")
+
+    # Create directories if they don't exist
+    if not os.path.exists(models_dir):
+        os.makedirs(models_dir)
+
+    if not os.path.exists(logdir):
+        os.makedirs(logdir)
+
+    logdir_agent = "./logs/agent"
+    logdir_adversary = "./logs/adversary"
+
     # Initialize base environment and wrap it
     base_env  = gym.make('gym_cityflow:CityFlow-1x1-LowTraffic-v0')
 
@@ -20,11 +35,11 @@ if __name__ == "__main__":
     params = load_parameters('parameters.json')
 
     # Initialize the agent and the adversary
-    agent = PPO(CustomLSTMPolicy, agent_env, verbose=1)
-    adversary = PPO(CustomLSTMPolicy, adversary_env, verbose=1)
+    agent = PPO(CustomLSTMPolicy, agent_env, verbose=1, tensorboard_log=logdir_agent)
+    adversary = PPO(CustomLSTMPolicy, adversary_env, verbose=1,tensorboard_log=logdir_adversary)
 
     # Set the total number of episodes and the number of episodes per training round
-    total_episodes = 100
+    total_episodes = 1000
     episodes_per_round = 10
 
     # Start the training loop over the total number of episodes
@@ -78,7 +93,7 @@ if __name__ == "__main__":
         # Train the active model (agent or adversary) based on the experience collected during this episode
         if is_adversary_training:
             adversary_env.set_mode(True, agent)
-            adversary.learn(total_timesteps=agent_env.steps_per_episode)
+            adversary.learn(total_timesteps=agent_env.steps_per_episode, reset_num_timesteps=False, tb_log_name="adv_1")
         else:
             agent_env.set_mode(False)
-            agent.learn(total_timesteps=agent_env.steps_per_episode)
+            agent.learn(total_timesteps=agent_env.steps_per_episode, reset_num_timesteps=False, tb_log_name="agent_1")

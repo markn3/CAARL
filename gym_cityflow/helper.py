@@ -1,6 +1,8 @@
 # parameter_loader.py
 
 import json
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common import logger
 
 def load_parameters(json_file_path):
     """
@@ -15,9 +17,3 @@ def load_parameters(json_file_path):
     with open(json_file_path, 'r') as f:
         params = json.load(f)
     return params
-
-if __name__ == "__main__":
-    # Test the function
-    params = load_parameters('ppo_params.json')
-    print("Loaded Parameters:")
-    print(params)
