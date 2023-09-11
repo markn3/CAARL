@@ -42,14 +42,18 @@ class DualEnvWrapper(gym.Wrapper):
             agent_action = self.agent.predict(self.past_observations.reshape(1,5,33))
             # using the agent's action, we step in the environment to get the needed info
             self.perturbed_state, reward, done, info = self.env.step(agent_action[0][0])
+            # print("Agent action: ", agent_action, "Reward: ", reward)
         
-            if self.env.current_step+1 == self.env.steps_per_episode:
-                done = True
-            else:
-                done = False
+            # if self.env.current_step+1 == self.env.steps_per_episode:
+            #     print("BOOM")
+            #     done = True
+            # else:
+            #     print("NOpe")
+            #     done = False
 
             # Update the past observations with the new perturbed state
             self.update_past_observations(self.perturbed_state)
+            # print("ADV reward: ", -reward)
             return self.past_observations.reshape(1,5,33), -reward, done, {}
         else:
             # Step the real environment with the agent's action

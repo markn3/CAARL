@@ -1,8 +1,26 @@
 # parameter_loader.py
 
 import json
+
+from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common import logger
+import numpy as np
+
+class TensorboardCallback(BaseCallback):
+    """
+    Custom callback for plotting additional values in tensorboard.
+    """
+
+    def __init__(self, verbose=0):
+        super().__init__(verbose)
+
+    def _on_step(self) -> bool:
+        # print(self.locals)
+        # Log scalar value (here a random variable)
+        value = np.random.random()
+        self.logger.record("random_value", value)
+        return True
+
 
 def load_parameters(json_file_path):
     """

@@ -8,6 +8,7 @@ from dual_wrapper import DualEnvWrapper
 from gym import spaces
 from helper import load_parameters
 
+
 if __name__ == "__main__":
 
     # Define directories for saving models and logs
@@ -36,7 +37,7 @@ if __name__ == "__main__":
 
     # Initialize the agent and the adversary
     agent = PPO(CustomLSTMPolicy, agent_env, verbose=1, tensorboard_log=logdir_agent)
-    adversary = PPO(CustomLSTMPolicy, adversary_env, verbose=1,tensorboard_log=logdir_adversary)
+    adversary = PPO(CustomLSTMPolicy,adversary_env, verbose=1,tensorboard_log=logdir_adversary, learning_rate=0.00003)
 
     # Set the total number of episodes and the number of episodes per training round
     total_episodes = 1000
@@ -93,7 +94,7 @@ if __name__ == "__main__":
         # Train the active model (agent or adversary) based on the experience collected during this episode
         if is_adversary_training:
             adversary_env.set_mode(True, agent)
-            adversary.learn(total_timesteps=agent_env.steps_per_episode, reset_num_timesteps=False, tb_log_name="adv_1")
+            adversary.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="adv_2")
         else:
             agent_env.set_mode(False)
-            agent.learn(total_timesteps=agent_env.steps_per_episode, reset_num_timesteps=False, tb_log_name="agent_1")
+            agent.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="agent_2")
