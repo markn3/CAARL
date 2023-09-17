@@ -34,17 +34,40 @@ if __name__ == "__main__":
 
     # Load the parameters (work in progress)
     params = load_parameters('parameters.json')
+    
+    # Flag to determine if loading from checkpoint or creating new models
+    LOAD_FROM_CHECKPOINT = True  # Set to True if you want to load from a checkpoint
 
-    # Initialize the agent and the adversary
-    agent = PPO(CustomLSTMPolicy, agent_env, verbose=1, tensorboard_log=logdir_agent)
-    adversary = PPO(CustomLSTMPolicy,adversary_env, verbose=1,tensorboard_log=logdir_adversary)
+    # Paths to the saved checkpoints (modify these paths if needed)
+    AGENT_CHECKPOINT_PATH = "./models/agent/checkpoint_agent_20"
+    
+    ADVERSARY_CHECKPOINT_PATH = "./models/adv/checkpoint_adversary_20"
 
     # Set the total number of episodes and the number of episodes per training round
+    start_episode = 0
     total_episodes = 2000
     episodes_per_round = 10
 
+    # Load or create agent and adversary
+    if LOAD_FROM_CHECKPOINT:
+        print("Loading checkpoints")
+        agent = PPO.load(AGENT_CHECKPOINT_PATH, env=agent_env)
+        adversary = PPO.load(ADVERSARY_CHECKPOINT_PATH, env=adversary_env)
+        with open("./models/current_episode.txt", "r") as file:
+            start_episode = int(file.read())
+        print("Done")
+    else:
+        agent = PPO(CustomLSTMPolicy, agent_env, verbose=1, tensorboard_log=logdir_agent)
+        adversary = PPO(CustomLSTMPolicy, adversary_env, verbose=1, tensorboard_log=logdir_adversary)
+
     # Start the training loop over the total number of episodes
-    for episode in range(total_episodes):
+    for episode in range(start_episode, total_episodes):
+        # Save checkpoints every 100 episodes
+        if episode % 20 == 0 and episode > 0:
+            agent.save("./models/agent/checkpoint_agent_" + str(episode))
+            adversary.save("./models/adv/checkpoint_adv_" + str(episode))
+            with open("./models/current_episode.txt", "w") as file:
+                file.write(str(episode))
 
         # Reset the LSTM's internal states for both agent and adversary
         agent.policy.reset_states()
@@ -94,7 +117,7 @@ if __name__ == "__main__":
         # Train the active model (agent or adversary) based on the experience collected during this episode
         if is_adversary_training:
             adversary_env.set_mode(True, agent)
-            adversary.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="adv_2000")
+            adversary.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="adv_2000_test_cont") # make sure to change the name
         else:
             agent_env.set_mode(False)
-            agent.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="agent_2000")
+            agent.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="agent_2000_test_cont") # make sure to change the name
