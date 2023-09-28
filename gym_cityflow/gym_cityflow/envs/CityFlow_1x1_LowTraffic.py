@@ -206,11 +206,16 @@ class CityFlow_1x1_LowTraffic(gym.Env):
         if self.action_mode == "disc":
             self.steps_since_change += 1
 
-            # Only change the light if the minimum green time has passed
-            if self.steps_since_change >= 7:
+            # Only change the light if the minimum green time has passed or if red light has surpasses 2 
+            if self.current_light == 0 and self.steps_since_change > 2:
                 self.current_light = action
                 if(self.previous_light != self.current_light):
-                    # print(f"steps_since_change: {self.steps_since_change}   | current_light: {self.current_light}")
+                    self.previous_light = self.current_light
+                    self.steps_since_change = 0
+                self.cityflow.set_tl_phase(self.intersection_id, self.previous_light)
+            elif self.steps_since_change >= 7:
+                self.current_light = action
+                if(self.previous_light != self.current_light):
                     self.previous_light = self.current_light
                     self.steps_since_change = 0
 
@@ -313,15 +318,6 @@ class CityFlow_1x1_LowTraffic(gym.Env):
         b1 = 1.5  # Adjust as needed
         b2 = 1.0  # Adjust as needed
 
-        # Calculate queue length (sum of waiting vehicles)
-        # q = sum(lane_waiting_vehicles_dict.values())
-        # # Calculate vehicle throughput (sum of all vehicles)
-        # n = sum(lane_vehicles_dict.values())
-        # # Time is simply the sec_per_step
-        # T = self.sec_per_step
-        # # Compute reward
-        # reward = -b1 * q + (b2 * n / T)
-
         # # Calculate average queue length (average of waiting vehicles)
         q_avg = sum(lane_waiting_vehicles_dict.values()) / len(lane_waiting_vehicles_dict)
         # Calculate average vehicle throughput (average of all vehicles)
@@ -338,10 +334,8 @@ class CityFlow_1x1_LowTraffic(gym.Env):
             pass
         elif (0 < self.steps_since_change < threshold) :  # Skip this in the very first step
             switch_penalty = switch_penalty_weight / self.steps_since_change
-            # print("Switch penalty: ", switch_penalty)
             reward -= (switch_penalty)
         
-        # print("Reward: ", reward)
         return reward 
 
     def set_replay_path(self, path):

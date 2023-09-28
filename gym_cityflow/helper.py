@@ -9,6 +9,7 @@ import numpy as np
 class TensorboardCallback(BaseCallback):
     """
     Custom callback for plotting additional values in tensorboard.
+    #TODO log loss
     """
 
     def __init__(self, verbose=0):
@@ -35,3 +36,7 @@ def load_parameters(json_file_path):
     with open(json_file_path, 'r') as f:
         params = json.load(f)
     return params
+
+def set_checkpoints_and_directories():
+
+    return None
