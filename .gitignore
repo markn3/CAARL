@@ -2,3 +2,5 @@
 /gym_cityflow/gym_cityflow/envs/1x1_config/replay.txt
 /gym_cityflow/__pycache__
 /gym_cityflow/gym_cityflow/__pycache__
+/gym_cityflow/models/adv
+/gym_cityflow/models/agent
