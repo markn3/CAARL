@@ -119,18 +119,15 @@ class DualEnvWrapper(gym.Wrapper):
         perturbed_observation = np.append(perturbed_observation, original_observation[-1])
         return perturbed_observation, exceeded_budget
 
-    def compute_adversary_reward(self, s, a_hat, s_prime, action_probs, agent_reward, transition_probs, exceeded_budget):
+    def compute_adversary_reward(self, action_probs, agent_reward, transition_probs, exceeded_budget):
         """
         Compute the adversary's expected reward based on the provided inputs.
         
         Parameters:
-        - s: Current state of the environment.
-        - a_hat: Adversary's action.
-        - s_prime: Next state after the adversary's action is applied.
         - C: Constant reward for cases where the adversary's action is outside the perturbation budget.
-        - pi_values: Values representing the agent's policy.
-        - p_values: Transition probabilities.
-        - R_values: Environment reward values.
+        - action_probs: Values representing the agent's policy.
+        - transition_probs: Transition probabilities.
+        - agent_reward: Environment reward values.
         - exceeded_budget: Boolean flag indicating if the adversary's action was outside the budget.
 
         Returns:

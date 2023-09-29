@@ -43,9 +43,9 @@ if __name__ == "__main__":
     LOAD_FROM_CHECKPOINT = True  # Set to True if you want to load from a checkpoint
 
     # Paths to the saved checkpoints (modify these paths if needed)
-    AGENT_CHECKPOINT_PATH = "./models/agent/checkpoint_agent_360"
+    AGENT_CHECKPOINT_PATH = "./models/agent/checkpoint_agent_1280"
     
-    ADVERSARY_CHECKPOINT_PATH = "./models/adv/checkpoint_adv_360" # Change bottom log name
+    ADVERSARY_CHECKPOINT_PATH = "./models/adv/checkpoint_adv_1280" # Change bottom log name
 
     # Set the total number of episodes and the number of episodes per training round
     start_episode = 0
@@ -122,8 +122,8 @@ if __name__ == "__main__":
         if is_adversary_training:
             adversary.policy.reset_states()
             adversary_env.set_mode(True, agent)
-            adversary.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="adv_2000_3_1") # make sure to change the name
+            adversary.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="adv_2000_3_3") # make sure to change the name
         else:
             agent.policy.reset_states()
             agent_env.set_mode(False)
-            agent.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="agent_2000_3_1") # make sure to change the name
+            agent.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="agent_2000_3_3") # make sure to change the name
