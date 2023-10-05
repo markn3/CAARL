@@ -17,13 +17,13 @@ if __name__ == "__main__":
     logdir = os.path.join("logs")
     logdir_agent = "./logs/agent"
     logdir_adversary = "./logs/adversary"
-    log_agent = "agent_p_10"
-    log_adv = "adv_p_10"
+    log_agent = "agent_p_m"
+    log_adv = "adv_p_m"
     params = load_parameters('parameters.json') # Load the parameters (work in progress)
     AGENT_CHECKPOINT_PATH = "./models/agent/checkpoint_agent_160" # Paths to the saved checkpoints of the agent to load
     ADVERSARY_CHECKPOINT_PATH = "./models/adv/checkpoint_adv_160" # Paths to the saved checkpoints of the adv to load
-    agent_checkpoint = "./models/agent/checkpoint_agent_p_10_" # Save checkpoint as 
-    adv_checkpoint = "./models/adv/checkpoint_adv_p_10_" # Save checkpoint as 
+    agent_checkpoint = "./models/agent/checkpoint_agent_p_m_" # Save checkpoint as 
+    adv_checkpoint = "./models/adv/checkpoint_adv_p_m_" # Save checkpoint as 
     current_episode = "./models/current_episode.txt" # Text file that keeps track of the latest episodes (for checkpointing)
 
     start_episode = 0
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     # Create wrappers for the agent and the adversary
     agent_env = DualEnvWrapper(base_env, action_space=base_env.action_space)
-    adversary_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([3]*33), tp=transition_probs)
+    adversary_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([30]*33), tp=transition_probs)
     
     # Load or create agent and adversary
     if LOAD_FROM_CHECKPOINT:
@@ -58,8 +58,8 @@ if __name__ == "__main__":
         with open(current_episode, "r") as file:
             start_episode = int(file.read())
     else:
-        agent = PPO(CustomLSTMPolicy, agent_env verbose=1, tensorboard_log=logdir_agent)
-        adversary = PPO(CustomLSTMPolicy, adversary_env verbose=1, tensorboard_log=logdir_adversary)
+        agent = PPO(CustomLSTMPolicy, agent_env, verbose=1, tensorboard_log=logdir_agent)
+        adversary = PPO(CustomLSTMPolicy, adversary_env, verbose=1, tensorboard_log=logdir_adversary)
 
     # Start the training loop over the total number of episodes
     for episode in range(start_episode, total_episodes):
