@@ -59,8 +59,7 @@ class DualEnvWrapper(gym.Wrapper):
             p = self.transition_probs.get((state_key, agent_action), {}).get(perturbed_state_key, default_value)
 
             # Compute adversary reward
-            adversary_reward = self.compute_adversary_reward(self.env.get_state(), action, self.perturbed_state, 
-            action_probs, p, agent_reward, exceeded_budget)
+            adversary_reward = self.compute_adversary_reward(action_probs, agent_reward, p, exceeded_budget)
 
             # Update the past observations with the new perturbed state
             self.update_past_observations(self.perturbed_state)
@@ -76,7 +75,7 @@ class DualEnvWrapper(gym.Wrapper):
             
             return self.past_observations.reshape(1,5,33), reward, done, info
 
-    def apply_perturbation(self, adversary_action, original_observation, budget=2.0):
+    def apply_perturbation(self, adversary_action, original_observation, budget=10.0):
         """
         Modify the observation based on the adversary's action, enforcing an L_infinity norm constraint.
         
@@ -106,7 +105,7 @@ class DualEnvWrapper(gym.Wrapper):
             exceeded_budget = True
             # Scale down the adversary_action to meet the budget constraint
             scaling_factor = budget / linf_norm
-            adversary_action[:-1] = np.sign(adversary_action[:-1]) * np.minimum(np.abs(adversary_action[:-1]), budget)
+            adversary_action[:-1] *= scaling_factor
 
         # Perturb all elements except the last one
         perturbed_observation = original_observation[:-1] + adversary_action[:-1]

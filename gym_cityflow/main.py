@@ -12,9 +12,24 @@ from empirical_estimation import EmpiricalTransitionEstimator, train_estimator
 
 if __name__ == "__main__":
 
-    # Define directories for saving models and logs
+    # Define directories for saving models, logs, and checkpoints
     models_dir = "./models"
     logdir = os.path.join("logs")
+    logdir_agent = "./logs/agent"
+    logdir_adversary = "./logs/adversary"
+    log_agent = "agent_p_10"
+    log_adv = "adv_p_10"
+    params = load_parameters('parameters.json') # Load the parameters (work in progress)
+    AGENT_CHECKPOINT_PATH = "./models/agent/checkpoint_agent_160" # Paths to the saved checkpoints of the agent to load
+    ADVERSARY_CHECKPOINT_PATH = "./models/adv/checkpoint_adv_160" # Paths to the saved checkpoints of the adv to load
+    agent_checkpoint = "./models/agent/checkpoint_agent_p_10_" # Save checkpoint as 
+    adv_checkpoint = "./models/adv/checkpoint_adv_p_10_" # Save checkpoint as 
+    current_episode = "./models/current_episode.txt" # Text file that keeps track of the latest episodes (for checkpointing)
+
+    start_episode = 0
+    total_episodes = 3000 # total number of episodes
+    episodes_per_round = 10 # How many episodes to train agent/adversary before training the other
+    LOAD_FROM_CHECKPOINT = False  # Flag to determine if loading from checkpoint or creating new models
 
     # Create directories if they don't exist
     if not os.path.exists(models_dir):
@@ -23,11 +38,10 @@ if __name__ == "__main__":
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
-    logdir_agent = "./logs/agent"
-    logdir_adversary = "./logs/adversary"
-
+    print("Training estimator")
     estimator = EmpiricalTransitionEstimator()
     transition_probs = train_estimator(estimator)
+    print("done")
 
     # Initialize base environment and wrap it
     base_env  = gym.make('gym_cityflow:CityFlow-1x1-LowTraffic-v0')
@@ -35,42 +49,26 @@ if __name__ == "__main__":
     # Create wrappers for the agent and the adversary
     agent_env = DualEnvWrapper(base_env, action_space=base_env.action_space)
     adversary_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([3]*33), tp=transition_probs)
-
-    # Load the parameters (work in progress)
-    params = load_parameters('parameters.json')
     
-    # Flag to determine if loading from checkpoint or creating new models
-    LOAD_FROM_CHECKPOINT = True  # Set to True if you want to load from a checkpoint
-
-    # Paths to the saved checkpoints (modify these paths if needed)
-    AGENT_CHECKPOINT_PATH = "./models/agent/checkpoint_agent_1280"
-    
-    ADVERSARY_CHECKPOINT_PATH = "./models/adv/checkpoint_adv_1280" # Change bottom log name
-
-    # Set the total number of episodes and the number of episodes per training round
-    start_episode = 0
-    total_episodes = 3000
-    episodes_per_round = 10
-    
-
     # Load or create agent and adversary
     if LOAD_FROM_CHECKPOINT:
         print("Loading checkpoints")
         agent = PPO.load(AGENT_CHECKPOINT_PATH, env=agent_env)
         adversary = PPO.load(ADVERSARY_CHECKPOINT_PATH, env=adversary_env)
-        with open("./models/current_episode.txt", "r") as file:
+        with open(current_episode, "r") as file:
             start_episode = int(file.read())
     else:
-        agent = PPO(CustomLSTMPolicy, agent_env, verbose=1, tensorboard_log=logdir_agent)
-        adversary = PPO(CustomLSTMPolicy, adversary_env, verbose=1, tensorboard_log=logdir_adversary)
+        agent = PPO(CustomLSTMPolicy, agent_env verbose=1, tensorboard_log=logdir_agent)
+        adversary = PPO(CustomLSTMPolicy, adversary_env verbose=1, tensorboard_log=logdir_adversary)
 
     # Start the training loop over the total number of episodes
     for episode in range(start_episode, total_episodes):
-        # Save checkpoints every 100 episodes
+
+        # Save checkpoints every 60 episodes
         if episode % 40 == 0 and episode > 0:
-            agent.save("./models/agent/checkpoint_agent_" + str(episode))
-            adversary.save("./models/adv/checkpoint_adv_" + str(episode))
-            with open("./models/current_episode.txt", "w") as file:
+            agent.save(agent_checkpoint + str(episode))
+            adversary.save(adv_checkpoint + str(episode))
+            with open(current_episode, "w") as file:
                 file.write(str(episode))
 
         # Reset the LSTM's internal states for both agent and adversary
@@ -122,8 +120,8 @@ if __name__ == "__main__":
         if is_adversary_training:
             adversary.policy.reset_states()
             adversary_env.set_mode(True, agent)
-            adversary.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="adv_2000_3_3") # make sure to change the name
+            adversary.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name=log_adv) # make sure to change the name
         else:
             agent.policy.reset_states()
             agent_env.set_mode(False)
-            agent.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name="agent_2000_3_3") # make sure to change the name
+            agent.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name=log_agent) # make sure to change the name
