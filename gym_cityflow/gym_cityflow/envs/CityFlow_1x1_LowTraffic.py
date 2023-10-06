@@ -255,6 +255,8 @@ class CityFlow_1x1_LowTraffic(gym.Env):
 
         state = self.get_state()
         reward = self.get_reward()
+        info = {"average_travel_time": self.cityflow.get_average_travel_time()}
+        # print("info: ", info)
         self.current_step += 1
 
         if self.is_done:

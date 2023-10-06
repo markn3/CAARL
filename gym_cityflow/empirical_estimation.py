@@ -46,7 +46,7 @@ def train_estimator(estimator):
     model = PPO("MlpPolicy", env, verbose=1)
 
     # Collect samples to estimate the transition probabilities
-    num_steps = 100000
+    num_steps = 10000
     obs = env.reset()
     for _ in range(num_steps):
         action, _ = model.predict(obs)
@@ -57,7 +57,6 @@ def train_estimator(estimator):
             estimator.add_transition(o, a, n_o)
 
         obs = next_obs
-    print("done")
     return estimator.get_transition_probabilities()
 
 # # Get the empirical transition probabilities

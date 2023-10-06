@@ -17,13 +17,13 @@ if __name__ == "__main__":
     logdir = os.path.join("logs")
     logdir_agent = "./logs/agent"
     logdir_adversary = "./logs/adversary"
-    log_agent = "agent_p_m"
-    log_adv = "adv_p_m"
+    log_agent = "agent_f"
+    log_adv = "adv_f"
     params = load_parameters('parameters.json') # Load the parameters (work in progress)
     AGENT_CHECKPOINT_PATH = "./models/agent/checkpoint_agent_160" # Paths to the saved checkpoints of the agent to load
     ADVERSARY_CHECKPOINT_PATH = "./models/adv/checkpoint_adv_160" # Paths to the saved checkpoints of the adv to load
-    agent_checkpoint = "./models/agent/checkpoint_agent_p_m_" # Save checkpoint as 
-    adv_checkpoint = "./models/adv/checkpoint_adv_p_m_" # Save checkpoint as 
+    agent_checkpoint = "./models/agent/checkpoint_agent_f" # Save checkpoint as 
+    adv_checkpoint = "./models/adv/checkpoint_adv_f" # Save checkpoint as 
     current_episode = "./models/current_episode.txt" # Text file that keeps track of the latest episodes (for checkpointing)
 
     start_episode = 0
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     # Create wrappers for the agent and the adversary
     agent_env = DualEnvWrapper(base_env, action_space=base_env.action_space)
-    adversary_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([30]*33), tp=transition_probs)
+    adversary_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([12]*33), tp=transition_probs)
     
     # Load or create agent and adversary
     if LOAD_FROM_CHECKPOINT:
@@ -86,7 +86,7 @@ if __name__ == "__main__":
             adversary_env.set_mode(True, agent)
         else:
             print("Training the agent in episode:", episode)
-            agent_env.set_mode(False)
+            agent_env.set_mode(False, agent, adversary)
         
         # Reset the environments and get initial observations
         agent_obs = agent_env.reset().reshape(1, 5, 33)
@@ -107,11 +107,10 @@ if __name__ == "__main__":
                 agent_env.perturbed_state = adversary_env.perturbed_state
             # If the agent is training, predict its action and take a step in its environment
             else:
-                # Train the agent
-                action, _ = agent.predict(agent_obs)
-                next_obs, reward, done, _ = agent_env.step(action[0])
-                # Update agent observation
-                agent_obs = next_obs
+                next_obs, reward, done, _ = agent_env.step()
+                
+                # Update observation
+                adversary_obs = next_obs
                 
                 # Sync the perturbed state to the adversary's environment
                 adversary_env.perturbed_state = agent_env.perturbed_state
@@ -121,7 +120,7 @@ if __name__ == "__main__":
             adversary.policy.reset_states()
             adversary_env.set_mode(True, agent)
             adversary.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name=log_adv) # make sure to change the name
-        else:
+        else:            
             agent.policy.reset_states()
-            agent_env.set_mode(False)
+            agent_env.set_mode(False, agent, adversary)
             agent.learn(total_timesteps=agent_env.steps_per_episode,reset_num_timesteps=False, tb_log_name=log_agent) # make sure to change the name
