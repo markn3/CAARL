@@ -2,12 +2,6 @@
 import os
 import gym
 from stable_baselines3 import PPO
-from custom_LSTM import CustomLSTMPolicy
-from stable_baselines3.common.policies import ActorCriticCnnPolicy
-from dual_wrapper import DualEnvWrapper
-from gym import spaces
-from helper import load_parameters
-
 
 if __name__ == "__main__":
 
@@ -22,7 +16,7 @@ if __name__ == "__main__":
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
-    logdir_agent = "./logs/agent"
+    logdir_agent = "./logs/agent_something"
 
     # Initialize base environment and wrap it
     env  = gym.make('gym_cityflow:CityFlow-1x1-LowTraffic-v0')
@@ -38,12 +32,19 @@ if __name__ == "__main__":
     for episode in range(total_episodes):
         print(f"Episode {episode}")
         obs = env.reset()
+        total_reward = 0
+        total_travel = 0
         for step in range(env.steps_per_episode):
             action, _ = agent.predict(obs)
             obs, reward, done, info = env.step(action)
+            total_reward += reward
+            total_travel += info['average_travel_time']
             if done:
                 break
-        agent.learn(total_timesteps=env.steps_per_episode, reset_num_timesteps=False, tb_log_name="agent_no_adv_2")
+        average_reward = total_reward/(env.steps_per_episode)
+        average_travel = total_travel/(env.steps_per_episode)
+        print(f"Average_reward: {average_reward}   |   Average_travel: {average_travel}")
+        agent.learn(total_timesteps=env.steps_per_episode, reset_num_timesteps=False, tb_log_name="agent_no_adv_5")
 
 
  

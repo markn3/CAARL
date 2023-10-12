@@ -55,7 +55,7 @@ def create_flow(lower_volume, upper_volume, num_intervals, interval_duration, to
         json.dump(flows, json_file, indent=4)
 
 # Set your desired parameters
-vehicles_per_hour = 1000
+vehicles_per_hour = 1500
 steps_per_hour = 3600
 total_steps = steps_per_hour  # assuming you're running the simulation for 1 hour
 

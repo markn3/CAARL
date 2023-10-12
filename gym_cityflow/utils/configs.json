@@ -1,0 +1,27 @@
+{
+    "file_config": {
+        "models_dir": "./models",
+        "logdir": "logs",
+        "logdir_agent": "./logs/agent",
+        "logdir_adv": "./logs/adversary",
+        "log_agent": "agent",
+        "log_adv": "adv",
+        "save_model_every":40,
+        "load_models":false,
+        "pretrain_checkpoint": "./models/agent/checkpoint_pretrained_agent",
+        "adv_checkpoint": "./models/adv/checkpoint_adv",
+        "agent_checkpoint_path": "./models/agent/checkpoint_agent",
+        "adv_checkpoint_path": "./models/adv/checkpoint_adv",
+        "current_episode": "./models/current_episode.txt"
+    },
+    "params": {
+        "pretrain":false,
+        "pretrain_episodes":1000,
+        "start_episode":0,
+        "total_episodes":2500,
+        "episodes_per_round":15,
+        "initial_perturbation_prob": 0.1,
+        "max_perturbation_prob": 0.9
+    }
+
+}

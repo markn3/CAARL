@@ -3,7 +3,7 @@
 	"seed": 1,
 	"dir": "/mnt/c/Users/markn/Desktop/cf/gym_cityflow/gym_cityflow/envs/1x1_config/",
 	"roadnetFile": "roadnet.json",
-	"flowFile": "flow.json",
+	"flowFile": "flow_1500.json",
 	"rlTrafficLight": true,
 	"saveReplay": true,
 	"roadnetLogFile": "roadnetlog.json",

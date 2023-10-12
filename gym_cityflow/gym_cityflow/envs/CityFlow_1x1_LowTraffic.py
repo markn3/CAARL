@@ -185,27 +185,12 @@ class CityFlow_1x1_LowTraffic(gym.Env):
             self.observation_space = spaces.MultiDiscrete([100]*32 + [5])
         else:
             self.observation_space = spaces.MultiDiscrete([100]*8 + [5])
-    
-    def vehicle_dict(self, vehicle_speeds, vehicle_distances):
-        # bug if we include vehicles in waiting buffer
-        for vehicle in self.cityflow.get_vehicles(include_waiting=False):
-            speed = vehicle_speeds[vehicle]
-            distance = vehicle_distances[vehicle]
-            leader = self.cityflow.get_leader(vehicle)
-            
-            if vehicle in self.vehicle_wait_times and (speed == 0 or (leader and distance < 5)):
-                self.vehicle_wait_times[vehicle] += self.sec_per_step
-            elif vehicle not in self.vehicle_wait_times and (speed == 0 or (leader and distance < 5)):
-                self.vehicle_wait_times[vehicle] = self.sec_per_step
-            elif vehicle in self.vehicle_wait_times and (speed > 0 and not (leader and distance < 5)):
-                del self.vehicle_wait_times[vehicle]
 
     def step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
 
         if self.action_mode == "disc":
             self.steps_since_change += 1
-
             # Only change the light if the minimum green time has passed or if red light has surpasses 2 
             if self.current_light == 0 and self.steps_since_change > 2:
                 self.current_light = action
@@ -256,7 +241,6 @@ class CityFlow_1x1_LowTraffic(gym.Env):
         state = self.get_state()
         reward = self.get_reward()
         info = {"average_travel_time": self.cityflow.get_average_travel_time()}
-        # print("info: ", info)
         self.current_step += 1
 
         if self.is_done:
@@ -269,7 +253,7 @@ class CityFlow_1x1_LowTraffic(gym.Env):
             lane_waiting_vehicles_dict = self.cityflow.get_lane_waiting_vehicle_count()
             self.is_done = True
 
-        return state, reward, self.is_done, {}
+        return state, reward, self.is_done, info
 
 
     def reset(self):
