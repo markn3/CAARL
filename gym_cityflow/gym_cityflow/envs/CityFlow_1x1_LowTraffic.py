@@ -66,18 +66,7 @@ class CityFlow_1x1_LowTraffic(gym.Env):
 
         self.steps_per_episode = 1000
         self.current_step = 0
-        self.sequence_index = 0
         
-
-        self.sequence = [1, 3, 0, 2, 4, 0]
-        # self.sequence = [1, 3, 2, 4]
-
-        # self.min_green_time = 15
-        # self.min_met = False
-
-        self.zero_light_counter = 0
-        
-
         self.is_done = False
         self.reward_range = (-float('inf'), float('inf'))
         self.start_lane_ids = \
@@ -187,78 +176,70 @@ class CityFlow_1x1_LowTraffic(gym.Env):
             self.observation_space = spaces.MultiDiscrete([100]*8 + [5])
 
     def step(self, action):
+        # Ensure the provided action is valid within the action space.
         assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
 
-        if self.action_mode == "disc":
-            self.steps_since_change += 1
-            # Only change the light if the minimum green time has passed or if red light has surpasses 2 
-            if self.current_light == 0 and self.steps_since_change > 2:
-                self.current_light = action
-                if(self.previous_light != self.current_light):
-                    self.previous_light = self.current_light
-                    self.steps_since_change = 0
-                self.cityflow.set_tl_phase(self.intersection_id, self.previous_light)
-            elif self.steps_since_change >= 7:
-                self.current_light = action
-                if(self.previous_light != self.current_light):
-                    self.previous_light = self.current_light
-                    self.steps_since_change = 0
-
-                self.cityflow.set_tl_phase(self.intersection_id, self.previous_light)
-        else:
-            # Continuous
-            self.steps_since_change += 1
-
-            # If light phase '0' is active, count the steps
-            if self.current_light == 0:
-                self.zero_light_counter += 1
-            else:
-                self.zero_light_counter = 0  # Reset counter when other light phases are active
-
-            # Check if we need to switch the light
-            # If current light is 0 and zero_light_counter is 5, force a switch
-            # Else, switch when phase_duration reaches 0
-            if (self.current_light == 0 and self.zero_light_counter >= 5) or (self.current_light != 0 and self.phase_duration <= 0):
-
-                print(f"steps_since_change: {self.steps_since_change}   | current_light: {self.current_light}")
-                value = self.sequence[self.sequence_index]
-                self.sequence_index = (self.sequence_index + 1) % len(self.sequence)
-
-                self.current_light = value
-                self.phase_duration = 10
+        # Increment the counter that tracks the number of steps since the last light change.
+        self.steps_since_change += 1
+        
+        # Check if the current light is red (0) and it has been red for more than 2 steps.
+        if self.current_light == 0 and self.steps_since_change > 2:
+            # Update the current light with the action provided.
+            self.current_light = action
+            
+            # Check if the new light state differs from the previous one.
+            if(self.previous_light != self.current_light):
+                # If different, update the previous light state and reset the step counter.
+                self.previous_light = self.current_light
+                self.steps_since_change = 0
+            
+            # Update the traffic light phase in the simulation.
+            self.cityflow.set_tl_phase(self.intersection_id, self.previous_light)
+        # Check if the minimum green time (7 steps) has passed.
+        elif self.steps_since_change >= 7:
+            # Update the current light with the action provided.
+            self.current_light = action
+            
+            # Check if the new light state differs from the previous one.
+            if(self.previous_light != self.current_light):
+                # If different, update the previous light state and reset the step counter.
+                self.previous_light = self.current_light
                 self.steps_since_change = 0
 
-            # Decrease phase_duration by action only if current light is not 0
-            if self.current_light != 0:
-                self.phase_duration -= action
-
-            self.cityflow.set_tl_phase(self.intersection_id, self.current_light)
-
-
-        # Transition to the next state
+            # Update the traffic light phase in the simulation.
+            self.cityflow.set_tl_phase(self.intersection_id, self.previous_light)
+        
+        # Progress the simulation to the next step.
         self.cityflow.next_step()
 
+        # Get the current state and reward.
         state = self.get_state()
         reward = self.get_reward()
+        
+        # Retrieve additional information about the simulation state.
         info = {"average_travel_time": self.cityflow.get_average_travel_time()}
+        
+        # Increment the step counter.
         self.current_step += 1
 
+        # Check if the environment has already returned done = True and log a warning if step() is called again.
         if self.is_done:
             logger.warn("You are calling 'step()' even though this environment has already returned done = True. "
                         "You should always call 'reset()' once you receive 'done = True' "
                         "-- any further steps are undefined behavior.")
             reward = 0.0
 
+        # Check if the end of the episode is reached and update the 'is_done' flag.
         if self.current_step + 1 == self.steps_per_episode:
             lane_waiting_vehicles_dict = self.cityflow.get_lane_waiting_vehicle_count()
             self.is_done = True
 
+        # Return the new state, reward, done flag, and additional info.
         return state, reward, self.is_done, info
 
 
     def reset(self):
         # traceback.print_stack()
-        self.vehicle_wait_times = {}
         self.cityflow.reset()
         self.is_done = False
         self.current_step = 0
@@ -266,8 +247,6 @@ class CityFlow_1x1_LowTraffic(gym.Env):
         self.steps_since_change = 0
         self.current_light = 0
         self.previous_light = 0
-
-        self.phase_duration = 30
 
         return self.get_state()
 
