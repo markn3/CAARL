@@ -1,10 +1,10 @@
-from utils.training import pretrain, main_training
-from utils.helper import load_parameters, create_models, timing_decorator
+from utils.training import pretrain, main_training, main_train
+from utils.helper import get_config, create_models, timing_decorator
 
 if __name__ == "__main__":
 
-    print("Loading parameters")
-    config = load_parameters("./utils/configs.json")
+    print("Getting configs")
+    config = get_config("./utils/configs.json")
 
     print("Creating models")
     agent, agent_env, adv, adv_env = create_models(config)
@@ -12,10 +12,10 @@ if __name__ == "__main__":
 
     if config["params"]["pretrain"]:
         print("pretraining model without adversary")
-        agent = pretrain(agent, agent_env, config["file_config"])
+        agent = pretrain(agent, agent_env, config["file_config"], config["params"])
     
-    print("Main training")    
-    main_training(agent, agent_env, adv, adv_env, config)
+    print("\nMain training")    
+    main_train(agent, agent_env, adv, adv_env, config)
 
     #TODO model parameter loading
 
