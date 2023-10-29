@@ -1,4 +1,4 @@
-from utils.training import pretrain, main_training, main_train
+from utils.training import pretrain, main_train
 from utils.helper import get_config, create_models, timing_decorator
 
 if __name__ == "__main__":

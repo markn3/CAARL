@@ -65,11 +65,13 @@ def create_models(config):
 
     # Create wrappers for the agent and the adversary
     agent_env = DualEnvWrapper(base_env, action_space=base_env.action_space)
-    adv_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([6]*33), tp=transition_probs)
+    adv_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([14]*33), tp=transition_probs)
 
     # Load or create agent and adversary
     if file_config["load_models"]:
         if file_config["load_pretrain"]:
+            filepath = file_config["pretrain_checkpoint"]
+            print(f"Loading {filepath}")
             agent = PPO.load(file_config["pretrain_checkpoint"], env=agent_env)
             adv = PPO(CustomLSTMPolicy, adv_env, verbose=1, n_steps=1000, tensorboard_log=file_config["logdir_adv"])
         else:
@@ -106,4 +108,19 @@ def update_model(old_model, env):
     new_model.load_parameters(old_weights)
     return new_model
 
+def save_model(file_config, episode=0):
+    
+    # Save model checkpoints and update current episode at specified intervals
+    if not os.path.exists(file_config["agent_folder"]):
+        os.makedirs(file_config["agent_folder"])
+
+    if not os.path.exists(file_config["adv_folder"]):
+        os.makedirs(file_config["adv_folder"])
+
+    agent.save(file_config["agent_folder"] + file_config["agent_checkpoint_path"] + "_" + str(episode))
+    adv.save(file_config["adv_folder"] + file_config["adv_checkpoint_path"] + "_" + str(episode))
+    with open(file_config["current_episode"], "w") as file:
+        file.write(str(episode))
+
+    return None
 

@@ -1,5 +1,7 @@
 import numpy as np
-from utils.helper import timing_decorator, update_model
+from utils.helper import timing_decorator, update_model, save_model
+import os
+
 
 
 # Pre-training the agent without an adversary
@@ -53,22 +55,22 @@ def main_train(agent, agent_env, adv, adv_env, config):
             print(f"Agent perturbation probability: {agent_env.pert_prob}")
         else:
             # Keeps perturbation probability static
-            agent_env.pert_prob = 1
+            agent_env.pert_prob = 0.5
 
-         # Save model checkpoints and update current episode at specified intervals
+        # Save model checkpoints and update current episode at specified intervals
         if file_config["save_model"]:
             if episode % file_config["save_model_every"] == 0 and episode > 0:
-                agent.save(file_config["agent_checkpoint_path"] + str(episode))
-                adv.save(file_config["adv_checkpoint_name"] + str(episode))
-                with open(file_config["current_episode"], "w") as file:
-                    file.write(str(episode))
+                save_model(episode)
 
         # Reset the LSTM's internal states for both agent and adversary
         agent.policy.reset_states()
         adv.policy.reset_states()
 
         # Determine the training entity (agent or adversary) based on the current episode
-        is_adv_training = (episode // params["episodes_per_round"]) % 2 == 1
+        if agent_env.pert_prob == 0:
+            is_adv_training = False
+        else:
+            is_adv_training = (episode // params["episodes_per_round"]) % 2 == 1
 
         # Set the training mode based on the determined training entity and train the active model
         if is_adv_training:
