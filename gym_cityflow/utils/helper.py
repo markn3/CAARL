@@ -57,15 +57,19 @@ def create_models(config):
     if not os.path.exists(file_config["models_dir"]):
         os.makedirs(file_config["models_dir"])
 
-    if not os.path.exists(file_config["logdir"]):
-        os.makedirs(file_config["logdir"])
+    if not os.path.exists(file_config["agent_folder"]):
+        os.makedirs(file_config["agent_folder"])
+
+    if not os.path.exists(file_config["adv_folder"]):
+        os.makedirs(file_config["adv_folder"])
+
 
     # Initialize base environment and wrap it
     base_env  = gym.make('gym_cityflow:CityFlow-1x1-LowTraffic-v0')
 
     # Create wrappers for the agent and the adversary
     agent_env = DualEnvWrapper(base_env, action_space=base_env.action_space)
-    adv_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([14]*33), tp=transition_probs)
+    adv_env = DualEnvWrapper(base_env, action_space=spaces.MultiDiscrete([6]*33), tp=transition_probs, os=True)
 
     # Load or create agent and adversary
     if file_config["load_models"]:
@@ -73,15 +77,15 @@ def create_models(config):
             filepath = file_config["pretrain_checkpoint"]
             print(f"Loading {filepath}")
             agent = PPO.load(file_config["pretrain_checkpoint"], env=agent_env)
-            adv = PPO(CustomLSTMPolicy, adv_env, verbose=1, n_steps=1000, tensorboard_log=file_config["logdir_adv"])
+            adv = PPO("MlpPolicy", adv_env, verbose=1, n_steps=1000, tensorboard_log=file_config["adv_folder"])
         else:
-            agent = PPO.load(file_config["agent_checkpoint_path"], env=agent_env)
-            adv = PPO.load(file_config["adv_checkpoint_path"], env=adv_env)
+            agent = PPO.load(file_config["agent_folder"] + "/" + file_config["agent_checkpoint_path"], env=agent_env)
+            adv = PPO.load(file_config["adv_folder"] + "/" + file_config["adv_checkpoint_path"], env=adv_env)
             with open(file_config["current_episode"], "r") as file:
                 start_episode = int(file.read())
     else:
-        agent = PPO(CustomLSTMPolicy, agent_env, verbose=1, ent_coef=0.001, tensorboard_log=file_config["logdir_agent"])
-        adv = PPO(CustomLSTMPolicy, adv_env, verbose=1, n_steps=1000, tensorboard_log=file_config["logdir_adv"])
+        agent = PPO(CustomLSTMPolicy, agent_env, verbose=1, ent_coef=0.001, tensorboard_log=file_config["agent_folder"])
+        adv = PPO("MlpPolicy", adv_env, verbose=1, n_steps=1000, tensorboard_log=file_config["adv_folder"])
 
 
     return agent, agent_env, adv, adv_env
@@ -108,17 +112,11 @@ def update_model(old_model, env):
     new_model.load_parameters(old_weights)
     return new_model
 
-def save_model(file_config, episode=0):
-    
+def save_model(agent, adv, file_config, episode=0):
     # Save model checkpoints and update current episode at specified intervals
-    if not os.path.exists(file_config["agent_folder"]):
-        os.makedirs(file_config["agent_folder"])
-
-    if not os.path.exists(file_config["adv_folder"]):
-        os.makedirs(file_config["adv_folder"])
-
-    agent.save(file_config["agent_folder"] + file_config["agent_checkpoint_path"] + "_" + str(episode))
-    adv.save(file_config["adv_folder"] + file_config["adv_checkpoint_path"] + "_" + str(episode))
+    
+    agent.save(file_config["agent_folder"] + "/" + file_config["agent_checkpoint_path"] + "_" + str(episode))
+    adv.save(file_config["adv_folder"] + "/" +  file_config["adv_checkpoint_path"] + "_" + str(episode))
     with open(file_config["current_episode"], "w") as file:
         file.write(str(episode))
 

@@ -55,16 +55,15 @@ def main_train(agent, agent_env, adv, adv_env, config):
             print(f"Agent perturbation probability: {agent_env.pert_prob}")
         else:
             # Keeps perturbation probability static
-            agent_env.pert_prob = 0.5
+            agent_env.pert_prob = 0.1
 
         # Save model checkpoints and update current episode at specified intervals
         if file_config["save_model"]:
             if episode % file_config["save_model_every"] == 0 and episode > 0:
-                save_model(episode)
+                save_model(agent, adv, file_config, episode)
 
-        # Reset the LSTM's internal states for both agent and adversary
+        # Reset the LSTM's internal states
         agent.policy.reset_states()
-        adv.policy.reset_states()
 
         # Determine the training entity (agent or adversary) based on the current episode
         if agent_env.pert_prob == 0:

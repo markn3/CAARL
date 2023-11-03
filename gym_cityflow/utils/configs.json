@@ -1,21 +1,18 @@
 {
     "file_config": {
-        "models_dir": "./models",
-        "agent_folder": "./models/agent/5b_p5",
-        "adv_folder": "./models/adv/5b_p5",
-        "logdir": "logs",
-        "logdir_agent": "./logs/agent",
-        "logdir_adv": "./logs/adversary",
-        "log_agent": "agent_from0_10b_p5_2",
-        "log_adv": "adv_from0_10b_p5_2",
-        "save_model":true,
+        "save_model":false,
         "save_model_every":50,
         "load_models":false,
         "load_pretrain":false,
-        "pretrain_checkpoint": "./models/agent/checkpoint_pretrained_agent_everything",
-        "agent_checkpoint_path": "checkpoint_agent_5b_p5",
-        "adv_checkpoint_path": "checkpoint_adv_5b_p5",
-        "current_episode": "./models/current_episode.txt"
+        "models_dir": "./models",
+        "agent_folder": "./models/agent/test_policy",
+        "adv_folder": "./models/adv/test_policy",
+        "log_agent": "agent_test_policy",
+        "log_adv": "adv_test_policy",
+        "agent_checkpoint_path": "checkpoint_agent_test_policy",
+        "adv_checkpoint_path": "checkpoint_adv_test_policy",
+        "current_episode": "./models/current_episode.txt",
+        "pretrain_checkpoint": "./models/agent/checkpoint_pretrained_agent_everything"
     },
     "params": {
         "curriculum_learning":false,
@@ -23,7 +20,7 @@
         "pretrain_episodes":1000,
         "start_episode":0,
         "total_episodes":1000,
-        "episodes_per_round":15,
+        "episodes_per_round":2,
         "initial_perturbation_prob": 0.9,
         "max_perturbation_prob": 1
     }

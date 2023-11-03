@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 # Define the DualEnvWrapper class to handle both agent and adversary
 class DualEnvWrapper(gym.Wrapper):
-    def __init__(self, env, action_space=None, tp=None):
+    def __init__(self, env, action_space=None, tp=None, os=False):
         super(DualEnvWrapper, self).__init__(env)
 
         if action_space is not None:
@@ -16,19 +16,19 @@ class DualEnvWrapper(gym.Wrapper):
 
         if tp is not None:
             self.transition_probs = tp
-
-        self.perturbed_state = None  # To store the state after adversary's perturbation
+        
+        # Initialize the observation space for the agent and adversary
+        if os:
+            self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(33,), dtype=np.float32)
+        else:
+            self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(5, 33), dtype=np.float32)
+            
         self.is_adversary = False
         self.no_perturb = True
         self.agent = None
         self.pert_prob = 0
-        self.adv_observations = np.zeros((5, 33))
         self.agent_observations = np.zeros((5, 33))
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(5, 33), dtype=np.float32)
-
-    def update_adv_observations(self, new_obs):
-        self.adv_observations = np.roll(self.adv_observations, shift=-1, axis=0)
-        self.adv_observations[-1] = new_obs
+        
 
     def update_agent_observations(self, new_obs):
         self.agent_observations = np.roll(self.agent_observations, shift=-1, axis=0)
@@ -43,15 +43,17 @@ class DualEnvWrapper(gym.Wrapper):
     # Reset the environment and initialize the perturbed state
     def reset(self):
         obs = self.env.reset()
-        self.perturbed_state = obs  # Initialize with the real state
-        # Update observation space for sequences
-        self.update_agent_observations(obs)
-        return self.agent_observations  # Both agent and adversary would initially see the same observation
+        if self.is_adversary:
+            return obs
+        else:
+            # Update observation space for sequences
+            self.update_agent_observations(obs)
+            return self.agent_observations  # Both agent and adversary would initially see the same observation
 
     def step(self, action=None):
         if self.is_adversary:
             # Apply the perturbation to the real state to get the perturbed state
-            self.perturbed_state, exceeded_budget = self.apply_perturbation(action, self.env.get_state())
+            perturbed_state, exceeded_budget = self.apply_perturbation(action, self.env.get_state())
 
             self.update_agent_observations(self.env.get_state())
 
@@ -59,13 +61,13 @@ class DualEnvWrapper(gym.Wrapper):
             agent_action = self.agent.predict(self.agent_observations.reshape(1,5,33))
 
             # using the agent's action, we step in the environment to get the needed info
-            self.perturbed_state, agent_reward, done, info = self.env.step(agent_action[0][0])    
+            perturbed_state, agent_reward, done, info = self.env.step(agent_action[0][0])    
 
             # action probabilities
             action_probs = self.agent.policy.action_probs
 
             state_key = tuple(self.env.get_state().flatten())
-            perturbed_state_key = tuple(self.perturbed_state.flatten())
+            perturbed_state_key = tuple(perturbed_state.flatten())
             agent_action, _ = agent_action  # assuming agent_action was a tuple with the actual action as the first item
             agent_action = int(agent_action)
             default_value = 1e-10
@@ -74,32 +76,26 @@ class DualEnvWrapper(gym.Wrapper):
             # Compute adversary reward
             adversary_reward = self.compute_adversary_reward(action_probs, agent_reward, p, exceeded_budget)
 
-            # Update the adv observations with the perturbed state
-            self.update_adv_observations(self.env.get_state())
-            
-            return self.adv_observations.reshape(1,5,33), adversary_reward, done, {}
+            return perturbed_state, adversary_reward, done, {}
         else:
             rand_num = np.random.rand()
             perturb = rand_num < self.pert_prob
             if perturb:
                 true_state = self.env.get_state()
-                self.update_adv_observations(true_state)
-                adv_action, _ = self.adv.predict(self.adv_observations.reshape(1,5,33))
+                
+                adv_action, _ = self.adv.predict(true_state)
 
                 # Apply the perturbation to the real state to get the perturbed state
-                self.perturbed_state, exceeded_budget = self.apply_perturbation(adv_action, true_state)
+                perturbed_state, exceeded_budget = self.apply_perturbation(adv_action, true_state)
 
                 # update past_observations for the agent
-                self.update_agent_observations(self.perturbed_state)
+                self.update_agent_observations(perturbed_state)
 
                 # The agent takes the perturbed state to predict an action
                 agent_action, _ = self.agent.predict(self.agent_observations.reshape(1,5,33))
 
                 # The agent steps in the main env with the predicted action
                 next_state, reward, done, info = self.env.step(agent_action[0])
-                
-                # Update the perturbed state to be the new real state (until the adversary perturbs it again)
-                self.perturbed_state = next_state
                 
                 return self.agent_observations, reward, done, info
             else:
@@ -113,7 +109,7 @@ class DualEnvWrapper(gym.Wrapper):
 
                 return self.agent_observations, reward, done, info
 
-    def apply_perturbation(self, adversary_action, original_observation, budget=5):
+    def apply_perturbation(self, adversary_action, original_observation, budget=2):
         """
         Modify the observation based on the adversary's action, enforcing an L_infinity norm constraint.
         
@@ -133,7 +129,7 @@ class DualEnvWrapper(gym.Wrapper):
             adversary_action = adversary_action[0]
 
         # Adjust the adversary action to be in the range [-15, 15]
-        adversary_action -= 7 # 
+        adversary_action -= 3 # 
     
         # Calculate the L_infinity norm of the adversary_action
         linf_norm = np.max(np.abs(adversary_action[:-1]))
